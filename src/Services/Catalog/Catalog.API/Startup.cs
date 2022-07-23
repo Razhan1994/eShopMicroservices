@@ -1,4 +1,7 @@
-﻿namespace Catalog.API
+﻿using Catalog.API.Common;
+using Sentry.Extensibility;
+
+namespace Catalog.API
 {
     public class Startup
     {
@@ -17,6 +20,19 @@
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
 
+            services.Configure<DatabaseSettingOptions>(_configuration.GetSection("DatabaseSettings"));
+
+            // Register as many ISentryEventExceptionProcessor as you need. They ALL get called.
+            services.AddSingleton<ISentryEventExceptionProcessor, SpecialExceptionProcessor>();
+
+            // You can also register as many ISentryEventProcessor as you need.
+            services.AddTransient<ISentryEventProcessor, ExampleEventProcessor>();
+
+            services.AddSentryTunneling();
+            // Add services to the container.
+
+            // To demonstrate taking a request-aware service into the event processor above
+            services.AddHttpContextAccessor();
         }
 
         public void configure(WebApplication app)
@@ -27,6 +43,10 @@
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
+            app.UseSentryTracing();
+
+            app.UseSentryTunneling();
 
             app.UseAuthorization();
 
